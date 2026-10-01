@@ -86,15 +86,6 @@ img.start-logo{width:72px;height:72px;object-fit:contain;margin-bottom:20px;filt
 @keyframes flashFade{0%{opacity:1}100%{opacity:0}}
 
 /* TABLE BUTTON / BADGE */
-#tableBtn{position:fixed;bottom:108px;left:50%;transform:translateX(-50%);z-index:160;display:flex;align-items:center;gap:9px;padding:11px 22px;font-family:'Jost',sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;border:1px solid var(--gold-border);border-radius:var(--radius-pill);background:var(--glass-dark);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:var(--gold-light);cursor:pointer;opacity:0;pointer-events:none;transition:.4s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;white-space:nowrap}
-#tableBtn.table-active{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold)}
-#tableBtn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-#tableBadge{position:fixed;top:14px;right:14px;z-index:200;display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--glass-dark);border:1px solid var(--gold-border);border-radius:var(--radius-pill);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:0;pointer-events:none;transition:opacity .35s}
-#tableBadge.visible{opacity:1}
-.badge-pulse{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 1.8s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-#tableShadow{position:fixed;bottom:28%;left:50%;transform:translateX(-50%);width:140px;height:28px;background:radial-gradient(ellipse,rgba(0,0,0,.38),transparent 72%);border-radius:50%;pointer-events:none;z-index:1;opacity:0;transition:opacity .5s}
-#tableShadow.visible{opacity:1}
 
 /* ══ HUD: info card, leader line, brand, controls ══ */
 #hudCard{position:fixed;top:96px;left:50%;transform:translateX(-50%);min-width:220px;max-width:calc(100vw - 40px);padding:14px 26px 12px;text-align:center;z-index:210;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.05));backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);border:1px solid rgba(255,255,255,.22);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .4s}
@@ -111,20 +102,19 @@ img.start-logo{width:72px;height:72px;object-fit:contain;margin-bottom:20px;filt
 #hudLine .i{fill:#fff}
 #hudLine .p{fill:none;stroke:#fff;stroke-width:1;transform-box:fill-box;transform-origin:center;animation:hudPulse 1.8s ease-out infinite}
 @keyframes hudPulse{from{transform:scale(1);opacity:.9}to{transform:scale(2.2);opacity:0}}
-#hudBrand{position:fixed;left:50%;bottom:calc(172px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:170;text-align:center;pointer-events:none;opacity:0;transition:opacity .4s}
+#hudBrand{position:fixed;left:50%;bottom:calc(112px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:170;text-align:center;pointer-events:none;opacity:0;transition:opacity .4s}
 #hudBrand.show{opacity:1}
 #hudBrand .bn{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;letter-spacing:.18em;color:#E9D8C0;text-shadow:0 2px 10px rgba(0,0,0,.5)}
 #hudBrand .bs{display:flex;align-items:center;gap:10px;justify-content:center;font-size:10px;letter-spacing:.35em;color:rgba(233,216,192,.8)}
 #hudBrand .bs i{width:44px;height:1px;background:rgba(233,216,192,.5)}
-#hudCtrl{position:fixed;left:50%;bottom:calc(214px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:170;display:flex;gap:14px;opacity:0;pointer-events:none;transition:opacity .4s}
+#hudCtrl{position:fixed;left:50%;bottom:calc(156px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:170;display:flex;gap:14px;opacity:0;pointer-events:none;transition:opacity .4s}
 #hudCtrl.show{opacity:1;pointer-events:auto}
 #hudCtrl button{width:58px;height:38px;border-radius:20px;cursor:pointer;background:rgba(6,5,4,.35);border:1px solid rgba(233,216,192,.7);color:#E9D8C0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 #hudCtrl button:active{background:rgba(233,216,192,.25)}
 #hudCtrl svg{width:16px;height:16px;fill:currentColor}
 
 @supports(padding-bottom:env(safe-area-inset-bottom)){
-#dishCarousel{bottom:calc(20px + env(safe-area-inset-bottom))}
-#tableBtn{bottom:calc(108px + env(safe-area-inset-bottom))}}
+#dishCarousel{bottom:calc(20px + env(safe-area-inset-bottom))}}
 @media(max-width:390px){.dish-thumb img,.thumb-img-wrap{width:42px;height:42px}#startScreen h1{font-size:30px}}
 </style>
 </head>
@@ -170,12 +160,6 @@ img.start-logo{width:72px;height:72px;object-fit:contain;margin-bottom:20px;filt
   <button id="hudNext" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
 </div>
 
-<button id="tableBtn" aria-label="See on table">
-  <svg viewBox="0 0 24 24"><path d="M3 17 Q12 13 21 17"/><line x1="8" y1="17" x2="7" y2="21"/><line x1="16" y1="17" x2="17" y2="21"/><path d="M8 10 Q12 7 16 10"/><ellipse cx="12" cy="10.5" rx="4" ry="1.5"/></svg>
-  <span id="tableBtnText">See on Table</span>
-</button>
-<div id="tableBadge"><div class="badge-pulse"></div><span>Table View</span></div>
-<div id="tableShadow"></div>
 
 <div id="scanHint"><div class="scan-frame"><div class="scan-line"></div></div><p>Point at menu card</p></div>
 <div id="dishCarousel"></div>
@@ -197,10 +181,6 @@ img.start-logo{width:72px;height:72px;object-fit:contain;margin-bottom:20px;filt
   <a-light type="point" color="#fff5e0" intensity="1.2" position="0 1.5 1" distance="4" decay="2"></a-light>
 
   <a-camera position="0 0 0" look-controls="enabled: false">
-    <!-- camera-locked entity for Table View -->
-    <a-entity id="tableEntity" position="0 -0.4 -1.2" visible="false">
-      <a-entity id="tableModel"></a-entity>
-    </a-entity>
   </a-camera>
 
   <a-entity id="target1" mindar-image-target="targetIndex: 0">
@@ -218,18 +198,17 @@ const dishes = [
   { name:"Tantanmen",      folder:"Tantanman",     model:"Tantanman.glb",     thumb:"tantanman.png",     scale:"1.5 1.5 1.5", rotation:"90 90 90", weight:"460 g", price:"₹369" },
 ];
 
-let currentIndex=-1, arStarted=false, modelTimeout=null, swipeHintShown=false, tableModeOn=false, markerFound=false;
+let currentIndex=-1, arStarted=false, modelTimeout=null, swipeHintShown=false, markerFound=false;
 
 const $=s=>document.querySelector(s);
-const tableEntity=$('#tableEntity'), tableBtn=$('#tableBtn'), tableBtnText=$('#tableBtnText'),
-  tableBadge=$('#tableBadge'), tableShadow=$('#tableShadow'), modelEntity=$('#modelEntity'),
+const modelEntity=$('#modelEntity'),
   carousel=$('#dishCarousel'), logo=$('#logo'), scanHint=$('#scanHint'), target=$('#target1'),
   arScene=$('#arScene'), startScreen=$('#startScreen'), loadingOverlay=$('#loadingOverlay'),
   loadingStatus=$('#loadingStatus'), errorOverlay=$('#errorOverlay'), modelLoader=$('#modelLoader'),
   swipeZone=$('#swipeZone'), swipeHint=$('#swipeHint'), swipeFlash=$('#swipeFlash'), dishCounter=$('#dishCounter'),
   hudCard=$('#hudCard'), hudLine=$('#hudLine'), hudBrand=$('#hudBrand'), hudCtrl=$('#hudCtrl');
 
-const alwaysVisible=[carousel,logo,dishCounter,tableBtn];
+const alwaysVisible=[carousel,logo,dishCounter];
 
 /* carousel + counter dots */
 dishes.forEach((dish,i)=>{
@@ -254,51 +233,6 @@ function applyModel(ent,dish,factor){
   }));
 }
 
-/* ══ TABLE VIEW: auto-fit any model to a fixed real-world size ══ */
-const TABLE_FRAC=0.38;       // dish width as a fraction of screen height (bigger = larger dish)
-const TABLE_TILT=-65;        // anchor tilt; -90 = flat side-on, -60 = more top-down
-const tableModel=$('#tableModel');
-const d2r=d=>d*Math.PI/180;
-
-let tableDish=null, tableListening=false;
-function showTableModel(dish){
-  tableDish=dish;
-  tableModel.removeAttribute('gltf-model');
-  if(!tableListening){ tableListening=true;
-  tableModel.addEventListener('model-loaded',()=>{
-    const dish=tableDish;
-    const mesh=tableModel.getObject3D('mesh'); if(!mesh) return;
-    // measure the raw model with identity transforms
-    tableEntity.object3D.rotation.set(0,0,0);
-    tableModel.object3D.rotation.set(0,0,0);
-    tableModel.object3D.scale.set(1,1,1);
-    tableModel.object3D.position.set(0,0,0);
-    tableEntity.object3D.updateMatrixWorld(true);
-    const box=new THREE.Box3().setFromObject(mesh);
-    const size=box.getSize(new THREE.Vector3()), c=box.getCenter(new THREE.Vector3());
-    // MindAR's camera uses its own units (near plane can be ~10), so place the dish
-    // relative to the camera's real near/fov instead of fixed metres
-    const cam=arScene.camera;
-    let D=(cam.near>0?cam.near:0.1)*10; if(D>cam.far*0.5) D=cam.far*0.5;
-    const visH=2*D*Math.tan(d2r(cam.fov)/2);
-    tableEntity.object3D.position.set(0,-visH*0.12,-D);
-    const k=(visH*TABLE_FRAC)/(Math.max(size.x,size.y,size.z)||1);
-    // reuse the rotation you already tuned for the marker, then centre the model
-    const r=dish.rotation.split(' ').map(Number);
-    tableModel.object3D.rotation.set(d2r(r[0]),d2r(r[1]),d2r(r[2]));
-    tableModel.object3D.scale.set(k,k,k);
-    const off=c.multiplyScalar(k).applyEuler(tableModel.object3D.rotation);
-    tableModel.object3D.position.set(-off.x,-off.y,-off.z);
-    // marker-space → table-space (card's "up" becomes world up), tilted toward the viewer
-    tableEntity.object3D.rotation.set(d2r(TABLE_TILT),0,0);
-    tableEntity.object3D.visible=true;
-  });
-  tableModel.addEventListener('model-error',e=>console.error('Table model failed:',e));
-  }
-  tableEntity.setAttribute('visible','true');
-  requestAnimationFrame(()=>tableModel.setAttribute('gltf-model',`3d-model/${dish.folder}/${dish.model}`));
-}
-
 function selectDish(index){
   if(index===currentIndex) return;
   currentIndex=index;
@@ -316,27 +250,8 @@ function selectDish(index){
   document.querySelectorAll('.dish-thumb').forEach((el,i)=>el.classList.toggle('active',i===index));
   document.querySelectorAll('.dish-thumb')[index].scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
   document.querySelectorAll('.counter-dot').forEach((el,i)=>el.classList.toggle('active',i===index));
-  if(tableModeOn) showTableModel(dish);
 }
 
-/* See on Table */
-function setTableMode(on){
-  tableModeOn=on;
-  if(on){
-    showTableModel(dishes[currentIndex]);
-    modelEntity.setAttribute('visible','false');
-    tableBtn.classList.add('table-active'); tableBtnText.textContent='Back to Card';
-    tableBadge.classList.add('visible'); tableShadow.classList.add('visible');
-    scanHint.style.opacity='0';
-  }else{
-    tableEntity.setAttribute('visible','false'); tableModel.removeAttribute('gltf-model');
-    modelEntity.setAttribute('visible','true');
-    tableBtn.classList.remove('table-active'); tableBtnText.textContent='See on Table';
-    tableBadge.classList.remove('visible'); tableShadow.classList.remove('visible');
-    scanHint.style.opacity=markerFound?'0':'1';
-  }
-}
-['click','touchend'].forEach(evt=>tableBtn.addEventListener(evt,e=>{e.preventDefault();setTableMode(!tableModeOn)}));
 
 /* swipe */
 let tx=0,ty=0,tt=0,swipeLocked=false;
@@ -378,14 +293,13 @@ tap(playBtn,()=>setPlaying(!playing));
 const v3=new THREE.Vector3();
 function hudFrame(){
   requestAnimationFrame(hudFrame);
-  const live=arStarted&&currentIndex>=0&&(tableModeOn||markerFound);
+  const live=arStarted&&currentIndex>=0&&markerFound;
   hudCard.classList.toggle('show',live);
   hudLine.classList.toggle('show',live);
-  hudBrand.classList.toggle('show',arStarted&&tableModeOn);
-  hudCtrl.classList.toggle('show',arStarted&&tableModeOn);
+  hudBrand.classList.toggle('show',arStarted);
+  hudCtrl.classList.toggle('show',arStarted);
   if(!live||!arScene.camera) return;
-  const ent=tableModeOn?tableEntity:modelEntity;
-  ent.object3D.getWorldPosition(v3); v3.project(arScene.camera);
+  modelEntity.object3D.getWorldPosition(v3); v3.project(arScene.camera);
   if(v3.z>1){hudLine.classList.remove('show');return}
   const x=(v3.x*.5+.5)*innerWidth, y=(-v3.y*.5+.5)*innerHeight-10; // change -10 to nudge hotspot
   const r=hudCard.getBoundingClientRect();
@@ -431,7 +345,7 @@ async function startAR(){
 });
 
 target.addEventListener('targetFound',()=>{markerFound=true;scanHint.style.opacity='0'});
-target.addEventListener('targetLost',()=>{markerFound=false;if(!tableModeOn)scanHint.style.opacity='1'});
+target.addEventListener('targetLost',()=>{markerFound=false;scanHint.style.opacity='1'});
 document.addEventListener('contextmenu',e=>e.preventDefault());
 </script>
 </body>
