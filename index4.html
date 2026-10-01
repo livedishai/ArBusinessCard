@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta http-equiv="Permissions-Policy" content="camera=*">
+<title>AR Menu – 3D Dish Try-On</title>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--gold:#C9A84C;--gold-light:#E8C97A;--gold-dim:rgba(201,168,76,.18);--gold-border:rgba(201,168,76,.28);--ink:#0A0A0A;--cream:#F5F0E8;--glass-dark:rgba(6,5,4,.72);--radius-pill:100px}
+html,body{width:100%;height:100%;font-family:'Jost',sans-serif;background:#060504;overflow:hidden;overscroll-behavior:none;position:fixed}
+.a-enter-vr-button{display:none!important}
+a-scene{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;z-index:0!important}
+canvas.a-canvas{width:100%!important;height:100%!important;position:fixed!important;top:0!important;left:0!important}
+video{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:-1!important}
+
+/* START */
+#startScreen{position:fixed;inset:0;background:#060504;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;padding:40px 32px;transition:opacity .4s}
+.start-inner{display:flex;flex-direction:column;align-items:center;max-width:320px;width:100%}
+.start-ornament{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.start-ornament-line{width:40px;height:1px;background:linear-gradient(90deg,transparent,var(--gold))}
+.start-ornament-line.right{background:linear-gradient(90deg,var(--gold),transparent)}
+.start-ornament-diamond{width:6px;height:6px;background:var(--gold);transform:rotate(45deg)}
+img.start-logo{width:72px;height:72px;object-fit:contain;margin-bottom:20px;filter:brightness(0) invert(1) sepia(1) saturate(.6)}
+.start-eyebrow{font-size:10px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;margin-bottom:14px}
+#startScreen h1{font-family:'Cormorant Garamond',serif;color:var(--cream);font-size:36px;font-weight:300;line-height:1.15;text-align:center;margin-bottom:20px}
+#startScreen h1 em{font-style:italic;color:var(--gold-light)}
+#startScreen p.desc{color:rgba(245,240,232,.42);font-size:13px;font-weight:300;text-align:center;line-height:1.75;margin-bottom:36px}
+#startBtn,#retryBtn{padding:16px 42px;font-family:'Jost',sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;border:1px solid var(--gold-border);border-radius:var(--radius-pill);background:transparent;color:var(--gold-light);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#startBtn:active{background:var(--gold);color:var(--ink)}
+#retryBtn{margin-top:8px;padding:12px 28px;font-size:11px}
+
+/* LOADING / ERROR */
+#loadingOverlay,#errorOverlay{position:fixed;inset:0;background:#060504;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:998;gap:20px;padding:36px;text-align:center}
+#loadingOverlay.show,#errorOverlay.show{display:flex}
+.loading-ring{width:56px;height:56px;border:1px solid rgba(201,168,76,.15);border-top-color:var(--gold);border-radius:50%;animation:spin 1.2s linear infinite}
+#loadingStatus{color:rgba(245,240,232,.4);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+@keyframes spin{to{transform:rotate(360deg)}}
+#errorOverlay h2{font-family:'Cormorant Garamond',serif;color:#ff8080;font-size:22px;font-weight:400}
+#errorOverlay p{color:rgba(245,240,232,.4);font-size:13px;line-height:1.8;font-weight:300;max-width:300px}
+#modelLoader{position:fixed;top:56px;left:50%;transform:translateX(-50%);background:var(--glass-dark);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--gold-border);border-radius:var(--radius-pill);padding:7px 18px;color:rgba(245,240,232,.6);font-size:10px;letter-spacing:.14em;text-transform:uppercase;z-index:300;display:none;align-items:center;gap:9px}
+#modelLoader.show{display:flex}
+.mini-spin{width:11px;height:11px;border:1.5px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+
+/* LOGO / CAROUSEL */
+#logo{position:fixed;top:14px;left:14px;width:72px;z-index:200;opacity:0;pointer-events:none;transition:opacity .5s;filter:brightness(0) invert(1) sepia(1) saturate(.5)}
+#dishCarousel{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:6px;overflow-x:auto;max-width:calc(100vw - 20px);padding:10px 16px;background:var(--glass-dark);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--gold-border);border-radius:60px;scrollbar-width:none;z-index:150;opacity:0;pointer-events:none;transition:opacity .5s}
+#dishCarousel::-webkit-scrollbar{display:none}
+.dish-thumb{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;padding:4px 6px;border-radius:50px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:background .25s}
+.dish-thumb.active{background:var(--gold-dim)}
+.thumb-img-wrap{width:50px;height:50px}
+.dish-thumb img{width:50px;height:50px;object-fit:cover;border-radius:50%;border:1.5px solid rgba(201,168,76,.15);transition:.25s;pointer-events:none;display:block}
+.dish-thumb.active img{border-color:var(--gold);transform:scale(1.06)}
+.dish-thumb span{font-size:8.5px;letter-spacing:.05em;color:rgba(245,240,232,.4);text-align:center;max-width:58px;line-height:1.3;text-transform:uppercase}
+.dish-thumb.active span{color:var(--gold)}
+
+/* SCAN HINT */
+#scanHint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:16px;pointer-events:none;z-index:10;opacity:0;transition:opacity .5s}
+.scan-frame{position:relative;width:180px;height:180px;border:1px dashed rgba(201,168,76,.35);border-radius:6px}
+.scan-line{position:absolute;left:8px;right:8px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:scanLine 2.4s ease-in-out infinite}
+@keyframes scanLine{0%,100%{top:8px;opacity:0}10%,90%{opacity:1}50%{top:calc(100% - 8px)}}
+#scanHint p{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,240,232,.45)}
+
+/* SWIPE */
+#swipeZone{position:fixed;inset:0;z-index:100;touch-action:pan-y;pointer-events:none}
+#swipeZone.active{pointer-events:auto}
+#swipeHint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;gap:24px;pointer-events:none;z-index:200;opacity:0;transition:opacity .4s}
+#swipeHint.show{opacity:1}
+.swipe-arrow{display:flex;flex-direction:column;align-items:center;gap:6px}
+.swipe-arrow-icon{width:44px;height:44px;border:1px solid var(--gold-border);border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--glass-dark)}
+.swipe-arrow-icon svg{width:18px;height:18px;stroke:var(--gold);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.swipe-arrow span{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,240,232,.4)}
+#dishCounter{position:fixed;top:54px;left:50%;transform:translateX(-50%);background:var(--glass-dark);border:1px solid var(--gold-border);border-radius:var(--radius-pill);padding:5px 16px;display:flex;gap:8px;z-index:200;opacity:0;pointer-events:none;transition:opacity .4s}
+.counter-dot{width:4px;height:4px;border-radius:50%;background:rgba(201,168,76,.25);transition:.25s}
+.counter-dot.active{background:var(--gold);transform:scale(1.4)}
+#swipeFlash{position:fixed;inset:0;pointer-events:none;z-index:99;opacity:0}
+#swipeFlash.left{background:linear-gradient(to right,rgba(201,168,76,.06),transparent)}
+#swipeFlash.right{background:linear-gradient(to left,rgba(201,168,76,.06),transparent)}
+#swipeFlash.flash{animation:flashFade .35s ease-out forwards}
+@keyframes flashFade{0%{opacity:1}100%{opacity:0}}
+
+/* TABLE BUTTON / BADGE */
+
+/* ══ HUD: info card, leader line, brand, controls ══ */
+#hudCard{position:fixed;top:96px;left:50%;transform:translateX(-50%);min-width:220px;max-width:calc(100vw - 40px);padding:14px 26px 12px;text-align:center;z-index:210;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.05));backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);border:1px solid rgba(255,255,255,.22);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .4s}
+#hudCard.show{opacity:1}
+#hudName{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:22px;letter-spacing:.05em;text-transform:uppercase;color:var(--cream);line-height:1.15}
+.hud-rule{display:flex;align-items:center;gap:8px;margin:8px 0 7px}
+.hud-rule i{flex:1;height:1px;background:rgba(245,240,232,.4)}
+.hud-rule b{width:5px;height:5px;background:var(--cream);transform:rotate(45deg)}
+#hudMeta{font-size:13px;letter-spacing:.06em;color:rgba(245,240,232,.9)}
+#hudLine{position:fixed;inset:0;width:100%;height:100%;z-index:205;pointer-events:none;opacity:0;transition:opacity .4s}
+#hudLine.show{opacity:1}
+#hudStroke{stroke:rgba(245,240,232,.75);stroke-width:1.2}
+#hudLine .o{fill:rgba(255,255,255,.25);stroke:#fff;stroke-width:1.5}
+#hudLine .i{fill:#fff}
+#hudLine .p{fill:none;stroke:#fff;stroke-width:1;transform-box:fill-box;transform-origin:center;animation:hudPulse 1.8s ease-out infinite}
+@keyframes hudPulse{from{transform:scale(1);opacity:.9}to{transform:scale(2.2);opacity:0}}
+
+@supports(padding-bottom:env(safe-area-inset-bottom)){
+#dishCarousel{bottom:calc(20px + env(safe-area-inset-bottom))}}
+@media(max-width:390px){.dish-thumb img,.thumb-img-wrap{width:42px;height:42px}#startScreen h1{font-size:30px}}
+
+/* ══ FLAGSHIP UI ══ */
+.tags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:7px}
+.tag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:rgba(201,168,76,.2);border:1px solid var(--gold-border);color:var(--gold-light)}
+#hudPrice{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--gold-light)}
+#hudWeight{font-size:12px;color:rgba(245,240,232,.7);margin-left:10px}
+#actionBar{position:fixed;left:50%;bottom:132px;transform:translateX(-50%);display:flex;gap:8px;width:calc(100vw - 28px);max-width:420px;z-index:170;opacity:0;pointer-events:none;transition:opacity .5s}
+#actionBar a{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:100px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;border:1px solid var(--gold-border);background:var(--glass-dark);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:var(--gold-light);-webkit-tap-highlight-color:transparent}
+#actionBar a.primary{flex:1.7;background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#1a1305;font-weight:500;border-color:var(--gold)}
+#openBadge{position:fixed;top:14px;right:14px;z-index:200;padding:7px 14px;border-radius:100px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;background:var(--glass-dark);border:1px solid var(--gold-border);color:var(--cream);opacity:0;pointer-events:none;transition:opacity .5s}
+#openBadge.on::before,#openBadge.off::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:7px;vertical-align:middle;background:#5fd38d}
+#openBadge.off::before{background:#e07a5f}
+#snapBtn,#offerChip{position:fixed;right:14px;z-index:200;border:1px solid var(--gold-border);background:var(--glass-dark);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:var(--gold-light);cursor:pointer;-webkit-tap-highlight-color:transparent}
+#snapBtn{top:54px;width:44px;height:44px;border-radius:50%;font-size:18px;opacity:0;pointer-events:none;transition:opacity .5s}
+#offerChip{top:108px;padding:9px 14px;border-radius:100px;font-size:11px;letter-spacing:.1em;display:none}
+#offer{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:400;display:none;align-items:center;justify-content:center;padding:24px}
+#offer.show{display:flex}
+.offer-box{max-width:310px;width:100%;text-align:center;padding:30px 24px;border-radius:22px;background:linear-gradient(160deg,rgba(40,32,18,.96),rgba(12,10,7,.96));border:1px solid var(--gold);box-shadow:0 0 50px rgba(201,168,76,.25)}
+.offer-box .eyebrow{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+.offer-box h3{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;color:var(--cream);margin:8px 0}
+.offer-box p{font-size:13px;color:rgba(245,240,232,.6);font-weight:300}
+#offerCode{margin:16px auto 8px;padding:10px 14px;border:1px dashed var(--gold);border-radius:12px;font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;letter-spacing:.2em;color:var(--gold-light)}
+#offerTimer{font-size:11px!important;letter-spacing:.14em;color:var(--gold)!important;margin-bottom:18px}
+.offer-btn,#offerClose{display:block;width:100%;padding:13px;border-radius:100px;font-family:'Jost',sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;cursor:pointer;margin-top:8px}
+.offer-btn{background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#1a1305;border:0;font-weight:500}
+#offerClose{background:transparent;border:1px solid var(--gold-border);color:var(--gold-light)}
+</style>
+</head>
+<body>
+
+<div id="startScreen"><div class="start-inner">
+  <img class="start-logo" src="logo1.png" onerror="this.style.display='none'" alt="Logo">
+  <p class="start-eyebrow">Augmented Reality Experience</p>
+  <div class="start-ornament"><div class="start-ornament-line"></div><div class="start-ornament-diamond"></div><div class="start-ornament-line right"></div></div>
+  <h1>Explore the<br>flavours of <em>Japan</em></h1>
+  <p class="desc">See your dish before you order. Point your camera at the menu card and watch every dish come alive in 3D.</p>
+  <button id="startBtn">See Dishes in 3D</button>
+</div></div>
+
+<div id="loadingOverlay"><div class="loading-ring"></div><p id="loadingStatus">Starting camera</p></div>
+<div id="modelLoader"><div class="mini-spin"></div><span>Loading dish</span></div>
+
+<div id="errorOverlay">
+  <h2>Camera Access Denied</h2>
+  <p>Please allow camera access in your browser settings and try again.<br><br>
+  <strong style="color:rgba(245,240,232,.6)">iPhone:</strong> Settings → Safari → Camera → Allow<br>
+  <strong style="color:rgba(245,240,232,.6)">Android:</strong> Settings → Apps → Browser → Camera → Allow</p>
+  <button id="retryBtn">Retry</button>
+</div>
+
+<img src="logo1.png" id="logo" alt="Logo">
+<div id="dishCounter"></div>
+
+<div id="swipeHint">
+  <div class="swipe-arrow"><div class="swipe-arrow-icon"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div><span>Prev</span></div>
+  <div class="swipe-arrow"><div class="swipe-arrow-icon"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div><span>Next</span></div>
+</div>
+<div id="swipeFlash"></div>
+<div id="swipeZone"></div>
+
+<!-- HUD -->
+<svg id="hudLine"><line id="hudStroke" x1="0" y1="0" x2="0" y2="0"/><circle class="p" id="hudP" r="7"/><circle class="o" id="hudO" r="9"/><circle class="i" id="hudI" r="3.5"/></svg>
+<div id="hudCard"><div class="tags" id="hudTags"></div><div id="hudName"></div><div class="hud-rule"><i></i><b></b><i></i></div><div id="hudMeta"><span id="hudPrice"></span><span id="hudWeight"></span></div></div>
+
+
+<div id="openBadge"></div>
+<button id="snapBtn" aria-label="Capture and share">📸</button>
+<button id="offerChip">🎁 Your offer</button>
+<div id="actionBar">
+  <a data-a="reserve" class="primary" target="_blank" rel="noopener">Reserve Table</a>
+  <a data-a="directions" target="_blank" rel="noopener">Directions</a>
+  <a data-a="call">Call</a>
+</div>
+<div id="offer"><div class="offer-box">
+  <p class="eyebrow">You unlocked</p><h3 id="offerTitle"></h3><p id="offerText"></p>
+  <div id="offerCode"></div><p id="offerTimer"></p>
+  <a id="offerReserve" class="offer-btn" target="_blank" rel="noopener">Reserve &amp; claim</a>
+  <button id="offerClose">Keep exploring</button>
+</div></div>
+
+<div id="scanHint"><div class="scan-frame"><div class="scan-line"></div></div><p>Point at menu card</p></div>
+<div id="dishCarousel"></div>
+
+<a-scene id="arScene"
+  mindar-image="imageTargetSrc: ./targets/card.mind; filterMinCF: 0.1; filterBeta: 10; missTolerance: 10; warmupTolerance: 2; maxTrack: 1; uiLoading: no; uiError: no; uiScanning: no"
+  renderer="colorManagement: true; antialias: false; logarithmicDepthBuffer: false; precision: mediump; physicallyCorrectLights: true"
+  loading-screen="enabled: false" vr-mode-ui="enabled: false" xr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false" style="display:none;">
+
+  <a-assets timeout="30000">
+    <a-asset-item id="preload0" src="3d-model/KaramisoRamen/KaramisoRamen.glb"></a-asset-item>
+  </a-assets>
+
+  <a-light type="ambient" color="#ffffff" intensity="1.8"></a-light>
+  <a-light type="directional" color="#ffffff" intensity="1.6" position="1 3 2"></a-light>
+  <a-light type="directional" color="#ffe9c0" intensity="1.0" position="-2 2 -1"></a-light>
+  <a-light type="directional" color="#cce8ff" intensity="0.6" position="0 -1 2"></a-light>
+  <a-light type="point" color="#fff5e0" intensity="1.2" position="0 1.5 1" distance="4" decay="2"></a-light>
+
+  <a-camera position="0 0 0" look-controls="enabled: false">
+  </a-camera>
+
+  <a-entity id="target1" mindar-image-target="targetIndex: 0">
+    <a-entity id="modelEntity" position="0 0 0" rotation="0 0 0" scale="1 1 1" gltf-model=""></a-entity>
+  </a-entity>
+</a-scene>
+
+<script>
+/* ══ DISH DATA — edit weight / price here ══ */
+/* ══ EDIT THIS: your restaurant details ══ */
+const CONFIG={
+  name:'Aurelia', tagline:'Japanese Kitchen',
+  phone:'+910000000000',                 // for the Call button
+  whatsapp:'910000000000',               // country code + number, no + or spaces
+  mapsUrl:'https://maps.google.com/?q=YOUR+RESTAURANT+NAME+Madurai',
+  hours:{open:11, close:23},             // 24h clock
+  offer:{title:'Free Matcha Drink', text:'Show this screen to your server', code:'AR-MATCHA', unlockAfter:3, validMinutes:120},
+  analyticsUrl:''                        // optional: your endpoint to receive events
+};
+const dishes = [
+  { name:"Karamiso Ramen", folder:"KaramisoRamen", model:"KaramisoRamen.glb", thumb:"karamisoramen.png", scale:"4 4 4",       rotation:"90 90 90", weight:"450 g", price:"₹349", tag:"Chef's pick", veg:false, spice:3 },
+  { name:"Shio Ramen",     folder:"ShioRamen",     model:"ShioRamen.glb",     thumb:"shioramen.png",     scale:"9 9 9",       rotation:"90 90 90", weight:"420 g", price:"₹329", tag:"Light & clean", veg:false, spice:1 },
+  { name:"Shoyu Ramen",    folder:"ShoyuRamen",    model:"ShoyuRamen.glb",    thumb:"shoyuramen.png",    scale:"9 9 9",       rotation:"90 90 90", weight:"420 g", price:"₹329", tag:"Most ordered", veg:false, spice:1 },
+  { name:"Tantanmen",      folder:"Tantanman",     model:"Tantanman.glb",     thumb:"tantanman.png",     scale:"1.5 1.5 1.5", rotation:"90 90 90", weight:"460 g", price:"₹369", tag:"Bold & nutty", veg:false, spice:3 },
+];
+
+let currentIndex=-1, arStarted=false, modelTimeout=null, swipeHintShown=false, markerFound=false;
+
+const $=s=>document.querySelector(s);
+const modelEntity=$('#modelEntity'),
+  carousel=$('#dishCarousel'), logo=$('#logo'), scanHint=$('#scanHint'), target=$('#target1'),
+  arScene=$('#arScene'), startScreen=$('#startScreen'), loadingOverlay=$('#loadingOverlay'),
+  loadingStatus=$('#loadingStatus'), errorOverlay=$('#errorOverlay'), modelLoader=$('#modelLoader'),
+  swipeZone=$('#swipeZone'), swipeHint=$('#swipeHint'), swipeFlash=$('#swipeFlash'), dishCounter=$('#dishCounter'),
+  hudCard=$('#hudCard'), hudLine=$('#hudLine');
+
+const alwaysVisible=[carousel,logo,dishCounter,$('#actionBar'),$('#snapBtn'),$('#openBadge')];
+
+/* carousel + counter dots */
+dishes.forEach((dish,i)=>{
+  const t=document.createElement('div');
+  t.className='dish-thumb'+(i===0?' active':'');
+  t.innerHTML=`<div class="thumb-img-wrap"><img src="3d-model/${dish.folder}/${dish.thumb}" onerror="this.style.visibility='hidden'" alt="${dish.name}" draggable="false"></div><span>${dish.name}<br><b style="color:var(--gold)">${dish.price||''}</b></span>`;
+  t.addEventListener('click',()=>selectDish(i));
+  carousel.appendChild(t);
+  const d=document.createElement('div');
+  d.className='counter-dot'+(i===0?' active':'');
+  dishCounter.appendChild(d);
+});
+
+/* apply a dish model to an entity */
+function applyModel(ent,dish,factor){
+  ent.removeAttribute('gltf-model');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    ent.setAttribute('gltf-model',`3d-model/${dish.folder}/${dish.model}`);
+    ent.setAttribute('scale',dish.scale.split(' ').map(v=>v*factor).join(' '));
+    ent.setAttribute('rotation',dish.rotation);
+    if(ent===modelEntity) ent.setAttribute('position','0 0 0');
+  }));
+}
+
+function selectDish(index){
+  if(index===currentIndex) return;
+  currentIndex=index;
+  const dish=dishes[index];
+  if(modelTimeout) clearTimeout(modelTimeout);
+  modelLoader.classList.add('show');
+  applyModel(modelEntity,dish,1);
+  modelEntity.addEventListener('model-loaded',()=>{modelLoader.classList.remove('show');clearTimeout(modelTimeout)},{once:true});
+  modelTimeout=setTimeout(()=>modelLoader.classList.remove('show'),5000);
+
+  // info card text
+  $('#hudName').textContent=dish.name;
+  $('#hudPrice').textContent=dish.price||''; $('#hudWeight').textContent=dish.weight||'';
+  $('#hudTags').innerHTML=[
+    dish.veg===undefined?'':`<span class="tag">${dish.veg?'🟢 Veg':'🔴 Non-veg'}</span>`,
+    dish.spice?`<span class="tag">${'🌶'.repeat(dish.spice)}</span>`:'',
+    dish.tag?`<span class="tag">★ ${dish.tag}</span>`:''].join('');
+  onDishView(dish);
+
+  document.querySelectorAll('.dish-thumb').forEach((el,i)=>el.classList.toggle('active',i===index));
+  document.querySelectorAll('.dish-thumb')[index].scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+  document.querySelectorAll('.counter-dot').forEach((el,i)=>el.classList.toggle('active',i===index));
+}
+
+
+/* swipe */
+let tx=0,ty=0,tt=0,swipeLocked=false;
+swipeZone.addEventListener('touchstart',e=>{const t=e.changedTouches[0];tx=t.clientX;ty=t.clientY;tt=Date.now()},{passive:true});
+swipeZone.addEventListener('touchend',e=>{
+  if(swipeLocked) return;
+  const t=e.changedTouches[0],dx=t.clientX-tx,dy=t.clientY-ty;
+  if(Date.now()-tt>500||Math.abs(dx)<50||Math.abs(dy)>80||Math.abs(dy)>Math.abs(dx)*.9) return;
+  swipeLocked=true; setTimeout(()=>swipeLocked=false,300);
+  triggerSwipe(dx<0?'left':'right');
+},{passive:true});
+
+function triggerSwipe(dir){
+  const n=dishes.length;
+  swipeFlash.className=dir+' flash';
+  swipeFlash.addEventListener('animationend',()=>swipeFlash.className='',{once:true});
+  selectDish(dir==='left'?(currentIndex+1)%n:(currentIndex-1+n)%n);
+}
+function showSwipeHintOnce(){
+  if(swipeHintShown) return; swipeHintShown=true;
+  setTimeout(()=>{swipeHint.classList.add('show');setTimeout(()=>swipeHint.classList.remove('show'),2500)},1200);
+}
+
+
+/* ══ FLAGSHIP FEATURES ══ */
+const store={
+  get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+function track(ev,data={}){            // analytics: stored locally + optional beacon to your server
+  const rec={ev,t:Date.now(),...data};
+  const log=store.get('arm_events',[]); log.push(rec); store.set('arm_events',log.slice(-500));
+  if(CONFIG.analyticsUrl&&navigator.sendBeacon) navigator.sendBeacon(CONFIG.analyticsUrl,JSON.stringify(rec));
+}
+const waMsg=encodeURIComponent(`Hi ${CONFIG.name}! I saw your AR menu and I'd like to reserve a table.`);
+const LINKS={reserve:`https://wa.me/${CONFIG.whatsapp}?text=${waMsg}`,directions:CONFIG.mapsUrl,call:`tel:${CONFIG.phone}`};
+document.querySelectorAll('#actionBar a').forEach(a=>{
+  a.href=LINKS[a.dataset.a]; a.addEventListener('click',()=>track('click_'+a.dataset.a));
+});
+$('#offerReserve').href=LINKS.reserve;
+$('#offerReserve').addEventListener('click',()=>track('click_offer_reserve'));
+
+/* open / closing badge */
+const fmtHr=h=>(h%12||12)+(h>=12&&h<24?' PM':' AM');
+function updateOpen(){
+  const d=new Date(), h=d.getHours()+d.getMinutes()/60, {open,close}=CONFIG.hours, on=h>=open&&h<close, b=$('#openBadge');
+  b.textContent=on?(close-h<=1?'Closing soon':'Open now · till '+fmtHr(close)):'Opens '+fmtHr(open);
+  b.className=on?'on':'off';
+}
+
+/* scan-to-unlock offer */
+const viewed=new Set(); let offerTimer=null;
+function onDishView(dish){
+  track('dish_view',{dish:dish.name}); viewed.add(dish.name);
+  if(viewed.size>=CONFIG.offer.unlockAfter&&!store.get('arm_offer',null)){
+    store.set('arm_offer',{exp:Date.now()+CONFIG.offer.validMinutes*60000});
+    track('offer_unlocked'); showOffer();
+  }
+}
+function showOffer(){
+  const o=store.get('arm_offer',null); if(!o) return;
+  $('#offerTitle').textContent=CONFIG.offer.title; $('#offerText').textContent=CONFIG.offer.text;
+  $('#offerCode').textContent=CONFIG.offer.code; $('#offer').classList.add('show');
+  clearInterval(offerTimer);
+  const p=n=>String(n).padStart(2,'0');
+  const tick=()=>{const s=Math.max(0,Math.floor((o.exp-Date.now())/1000));
+    $('#offerTimer').textContent=s?`VALID FOR ${p(Math.floor(s/3600))}:${p(Math.floor(s%3600/60))}:${p(s%60)}`:'OFFER EXPIRED';};
+  tick(); offerTimer=setInterval(tick,1000);
+}
+$('#offerClose').addEventListener('click',()=>{$('#offer').classList.remove('show');$('#offerChip').style.display='block'});
+$('#offerChip').addEventListener('click',()=>{showOffer();track('offer_reopened')});
+
+/* snapshot + share (camera + dish + price/brand footer) */
+async function snapshot(){
+  const video=document.querySelector('video'), gl=arScene.renderer.domElement, d=dishes[currentIndex];
+  const dpr=Math.min(devicePixelRatio||1,2), W=Math.round(innerWidth*dpr), H=Math.round(innerHeight*dpr);
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  if(video&&video.videoWidth){
+    const vw=video.videoWidth, vh=video.videoHeight, cr=W/H; let sw=vw, sh=vh, sx=0, sy=0;
+    if(vw/vh>cr){sw=vh*cr;sx=(vw-sw)/2}else{sh=vw/cr;sy=(vh-sh)/2}
+    x.drawImage(video,sx,sy,sw,sh,0,0,W,H);
+  }
+  arScene.renderer.render(arScene.object3D,arScene.camera);   // fresh frame so the canvas isn't blank
+  x.drawImage(gl,0,0,W,H);
+  const g=x.createLinearGradient(0,H*.78,0,H); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.78)');
+  x.fillStyle=g; x.fillRect(0,H*.78,W,H*.22); x.textAlign='center';
+  x.fillStyle='#E8C97A'; x.font=`600 ${W*.07}px "Cormorant Garamond",serif`; x.fillText(`${d.name} · ${d.price}`,W/2,H*.92);
+  x.fillStyle='#F5F0E8'; x.font=`${W*.032}px Jost,sans-serif`; x.fillText(`${CONFIG.name.toUpperCase()} · ${CONFIG.tagline.toUpperCase()}`,W/2,H*.955);
+  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92)), file=new File([blob],'dish.jpg',{type:'image/jpeg'});
+  track('snapshot',{dish:d.name});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:CONFIG.name,text:`Look at ${d.name} at ${CONFIG.name}! 😍`});return}catch(e){if(e.name==='AbortError')return}
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dish.jpg'; a.click();
+}
+$('#snapBtn').addEventListener('click',snapshot);
+
+function initFlagship(){
+  updateOpen(); setInterval(updateOpen,60000);
+  const o=store.get('arm_offer',null);
+  if(o&&o.exp>Date.now()) $('#offerChip').style.display='block';   // returning visitor keeps their offer
+}
+
+/* HUD per-frame: project dish → screen, hotspot + leader line */
+const v3=new THREE.Vector3();
+function hudFrame(){
+  requestAnimationFrame(hudFrame);
+  const live=arStarted&&currentIndex>=0&&markerFound;
+  hudCard.classList.toggle('show',live);
+  hudLine.classList.toggle('show',live);
+  if(!live||!arScene.camera) return;
+  modelEntity.object3D.getWorldPosition(v3); v3.project(arScene.camera);
+  if(v3.z>1){hudLine.classList.remove('show');return}
+  const x=(v3.x*.5+.5)*innerWidth, y=(-v3.y*.5+.5)*innerHeight-10; // change -10 to nudge hotspot
+  const r=hudCard.getBoundingClientRect();
+  const s=$('#hudStroke');
+  s.setAttribute('x1',r.left+r.width*.6); s.setAttribute('y1',r.bottom);
+  s.setAttribute('x2',x); s.setAttribute('y2',y);
+  ['#hudP','#hudO','#hudI'].forEach(id=>{const c=$(id);c.setAttribute('cx',x);c.setAttribute('cy',y)});
+}
+hudFrame();
+
+/* START AR */
+async function startAR(){
+  if(arStarted) return;
+  track('scan_start');
+  startScreen.style.opacity='0'; setTimeout(()=>startScreen.style.display='none',400);
+  loadingOverlay.classList.add('show'); loadingStatus.textContent='Starting camera';
+  try{
+    const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+    const vc=isIOS?{facingMode:{exact:'environment'}}:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}};
+    const stream=await navigator.mediaDevices.getUserMedia({video:vc,audio:false});
+    stream.getTracks().forEach(t=>t.stop());
+    loadingStatus.textContent='Initialising AR';
+    arScene.style.display='block';
+    let fired=false;
+    const onReady=()=>{
+      if(fired) return; fired=true;
+      loadingOverlay.classList.remove('show');
+      scanHint.style.opacity='1'; arStarted=true;
+      swipeZone.classList.add('active');
+      alwaysVisible.forEach(el=>{el.style.opacity='1';el.style.pointerEvents='auto'});
+      selectDish(0); showSwipeHintOnce(); initFlagship();
+    };
+    arScene.addEventListener('loaded',onReady,{once:true});
+    arScene.addEventListener('arReady',onReady,{once:true});
+    setTimeout(onReady,3000);
+  }catch(err){
+    console.error('Camera error:',err);
+    loadingOverlay.classList.remove('show'); errorOverlay.classList.add('show');
+  }
+}
+['click','touchend'].forEach(evt=>{
+  $('#startBtn').addEventListener(evt,e=>{e.preventDefault();startAR()});
+  $('#retryBtn').addEventListener(evt,e=>{e.preventDefault();errorOverlay.classList.remove('show');startScreen.style.display='flex';startScreen.style.opacity='1'});
+});
+
+target.addEventListener('targetFound',()=>{markerFound=true;track('marker_found');scanHint.style.opacity='0'});
+target.addEventListener('targetLost',()=>{markerFound=false;scanHint.style.opacity='1'});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+</script>
+</body>
+</html>
