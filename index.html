@@ -228,7 +228,10 @@ const CONFIG={
   whatsapp:'910000000000',               // country code + number, no + or spaces
   mapsUrl:'https://maps.google.com/?q=YOUR+RESTAURANT+NAME+Madurai',
   hours:{open:11, close:23},             // 24h clock
-  spinDegPerSec:26,                      // auto-rotate speed: 26 ≈ one turn per 14 s (0 = off)
+  spinMode:'sway',                       // 'sway' = small gentle back-and-forth rotation | 'spin' = slow full 360° turn
+  swayDeg:22,                            // sway: how far it turns each side (degrees)
+  swaySeconds:7,                         // sway: time for one full left-right-left cycle
+  spinDegPerSec:26,                      // 'spin' mode speed: 26 ≈ one turn per 14 s  (0 = rotation off in both modes)
   spinAxis:'z',                          // change to 'y' if the dish spins about the wrong axis
   exposure:1.05,                         // overall brightness (0.8 darker … 1.4 brighter)
   envIntensity:1.1,                      // strength of reflections on the food
@@ -394,7 +397,7 @@ function initFlagship(){
 }
 
 /* auto-rotate (tap anywhere on the screen to pause / resume) */
-const spinner=$('#spinner'); let spinOn=CONFIG.spinDegPerSec>0, lastT=performance.now(), toastT=null;
+const spinner=$('#spinner'); let spinOn=CONFIG.spinDegPerSec>0, lastT=performance.now(), toastT=null, swayT=0, swayAng=0;
 function toggleSpin(){
   spinOn=!spinOn; const t=$('#spinToast');
   t.textContent=spinOn?'Rotation on':'Rotation paused'; t.classList.add('show');
@@ -824,7 +827,10 @@ const v3=new THREE.Vector3();
 function hudFrame(){
   requestAnimationFrame(hudFrame);
   const now=performance.now(), dt=Math.min((now-lastT)/1000,.1); lastT=now;
-  if(spinOn&&markerFound) spinner.object3D.rotation[CONFIG.spinAxis]+=d2r(CONFIG.spinDegPerSec)*dt;
+  if(spinOn&&markerFound){
+    if(CONFIG.spinMode==='sway'){swayT+=dt; const a=d2r(CONFIG.swayDeg)*Math.sin(swayT*2*Math.PI/CONFIG.swaySeconds); spinner.object3D.rotation[CONFIG.spinAxis]+=a-swayAng; swayAng=a}
+    else spinner.object3D.rotation[CONFIG.spinAxis]+=d2r(CONFIG.spinDegPerSec)*dt;
+  }
   fxUpdate(dt);
   const live=arStarted&&currentIndex>=0&&markerFound;
   hudCard.classList.toggle('show',live);
@@ -874,17 +880,22 @@ async function restartMindAR(){
 }
 function resumeFromTable(force){
   if(!tableOpen||xrActive||(!force&&Date.now()-tableT<1500)) return;
-  tableOpen=false; markerFound=false; setMode('card');
+  tableOpen=false; hideTarget(); setMode('card');
   const v=document.querySelector('video'), tr=v&&v.srcObject&&v.srcObject.getVideoTracks&&v.srcObject.getVideoTracks()[0];
   if(!(tr&&tr.readyState==='live'&&!tr.muted)) restartMindAR();   // camera was released (Android, or iOS interrupted it) → bring marker tracking back
 }
 ['visibilitychange','pageshow','focus'].forEach(ev=>(ev==='focus'||ev==='pageshow'?window:document).addEventListener(ev,()=>{if(!document.hidden) resumeFromTable()}));
+function hideTarget(){                     // marker tracking is paused during table view → make sure the dish isn't left frozen on screen
+  markerFound=false; try{target.object3D.visible=false}catch(e){}
+  if(arStarted) scanHint.style.opacity='1';
+}
 function openTable(){
   if(!tableMV||!tableMV.loaded){toast('Preparing 3D dish… try again');return}
   if(!tableMV.canActivateAR){toast(isIOS?'Open this page in Safari for table view':'Table view needs Chrome with ARCore');return}
   track('table_view',{dish:curDish.name});
   tableOpen=true; tableT=Date.now(); xrActive=false; setMode('table');
-  if(!isIOS){try{const m=mindar(); if(m) m.stop()}catch(e){} markerFound=false}   // Android: free the camera for WebXR / Scene Viewer
+  hideTarget();
+  if(!isIOS){try{const m=mindar(); if(m) m.stop()}catch(e){}}   // Android: free the camera for WebXR / Scene Viewer
   try{tableMV.activateAR()}catch(e){console.warn(e);tableOpen=false;setMode('card');restartMindAR();toast('Could not open table view')}
 }
 const setMode=m=>modeToggle.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
